@@ -70,13 +70,13 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
 # Streamlit App
 st.title("Invoice/Quote Generator")
 
-# Step 1: Ask if it's a Quote or Invoice
-st.header("Select Type")
-doc_type = st.radio("What would you like to generate?", options=["Invoice", "Quote"])
+# Section 1: Type Selection
+st.header("Step 1: Select Document Type")
+doc_type = st.radio("What would you like to generate?", options=["Invoice", "Quote"], horizontal=True)
 is_quote = doc_type == "Quote"
 
-# Step 2: Customer Details
-st.header("Customer Details")
+# Section 2: Customer Details
+st.header("Step 2: Enter Customer Details")
 customer_name = st.text_input("Customer Name")
 customer_address = st.text_area("Customer Address")
 customer_phone = st.text_input("Customer Phone Number")
@@ -84,61 +84,12 @@ invoice_number = st.text_input("Invoice/Quote Number", value="001")
 date = st.date_input("Date", value=datetime.date.today())
 due_date = st.text_input("Due Date", value="On Receipt")
 
-# Step 3: Add Items
-st.header("Item Details")
+# Section 3: Item Details
+st.header("Step 3: Add Items")
 if "items" not in st.session_state:
     st.session_state["items"] = []
 
+# Item input form
 with st.form("add_item_form"):
     description = st.text_input("Description")
-    rate = st.number_input("Rate", min_value=0.0, step=0.01)
-    quantity = st.number_input("Quantity", min_value=1, step=1)
-    add_item = st.form_submit_button("Add Item")
-    if add_item:
-        st.session_state["items"].append(
-            {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
-        )
-
-if st.session_state["items"]:
-    st.write("### Added Items")
-    for item in st.session_state["items"]:
-        st.write(f"- {item['description']}: ${item['rate']} x {item['quantity']} = ${item['amount']:.2f}")
-
-# Step 4: Summary and Generate PDF
-st.header("Summary & PDF Generation")
-if st.session_state["items"]:
-    total_amount = sum(item["amount"] for item in st.session_state["items"])
-    payment = st.number_input("Payment Amount", min_value=0.0, max_value=total_amount, step=0.01)
-    balance_due = total_amount - payment
-
-    st.write("### Summary")
-    st.write(f"**Total Amount:** ${total_amount:.2f}")
-    st.write(f"**Payment:** ${payment:.2f}")
-    st.write(f"**Balance Due:** ${balance_due:.2f}")
-
-    # Generate PDF Button
-    if st.button("Generate PDF"):
-        file_name = f"{doc_type}_{invoice_number}.pdf"
-        create_invoice(
-            file_name=file_name,
-            invoice_number=invoice_number,
-            date=date.strftime("%Y-%m-%d"),
-            due_date=due_date,
-            customer_name=customer_name,
-            customer_address=customer_address,
-            customer_phone=customer_phone,
-            items=st.session_state["items"],
-            total_amount=total_amount,
-            payment=payment,
-            balance_due=balance_due,
-            is_quote=is_quote,
-        )
-
-        # Provide Download Button
-        with open(file_name, "rb") as pdf_file:
-            st.download_button(
-                label=f"Download {doc_type}",
-                data=pdf_file,
-                file_name=file_name,
-                mime="application/pdf",
-            )
+    rate = st.number_input("Rate
