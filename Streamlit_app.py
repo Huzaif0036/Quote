@@ -189,7 +189,8 @@ with tab1:
                         label="Download PDF",
                         data=f,
                         file_name=os.path.basename(file_name),
-                        mime="application/pdf"
+                        mime="application/pdf",
+                        key=f"download_{invoice_number}"  # Unique key for each download button
                     )
 
 # Tab 2: Manage Documents
@@ -211,7 +212,7 @@ with tab2:
             st.write(os.path.basename(pdf_file))
         with col2:
             with open(pdf_file, "rb") as f:
-                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf")
+                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf", key=f"download_{pdf_file}")
         with col3:
             if st.button("Delete", key=f"delete_{pdf_file}"):
                 os.remove(pdf_file)
