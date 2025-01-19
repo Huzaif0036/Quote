@@ -4,10 +4,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 import datetime
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
 import glob
 
 # Directory to store PDFs
@@ -37,10 +33,10 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c = canvas.Canvas(file_name, pagesize=letter)
     title = "QUOTE" if is_quote else "INVOICE"
 
-    # Add Logo
+    # Add vertical space and logo
     if os.path.exists(logo_path):
         try:
-            c.drawImage(logo_path, 50, 740, width=100, height=50)
+            c.drawImage(logo_path, 50, 700, width=100, height=100)
         except Exception as e:
             print(f"Error loading logo: {e}")
 
@@ -115,97 +111,65 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c.drawString(50, 50, "Thank you for choosing Tranquil Heating and Cooling!")
     c.save()
 
-# Function to send email with PDF
-def send_email(recipient_email, pdf_file_path):
-    sender_email = "your_email@example.com"
-    sender_password = "your_password"  # Use an app-specific password for Gmail/other providers
-
-    # Create the email
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = recipient_email
-    msg['Subject'] = "Your Invoice/Quote"
-
-    # Attach the PDF
-    with open(pdf_file_path, "rb") as f:
-        part = MIMEBase('application', 'octet-stream')
-        part.set_payload(f.read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename="{os.path.basename(pdf_file_path)}"')
-        msg.attach(part)
-
-    # Send the email
-    with smtplib.SMTP('smtp.gmail.com', 587) as server:
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-
 # Streamlit App
 st.title("Invoice/Quote Portal")
+tab1, tab2 = st.tabs(["Generate Document", "Manage Documents"])
 
-# Generate a new invoice
-st.header("Generate New Invoice/Quote")
-doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
-is_quote = doc_type == "Quote"
-customer_name = st.text_input("Customer Name")
-customer_address = st.text_area("Customer Address")
-customer_phone = st.text_input("Customer Phone")
-date = st.date_input("Date", datetime.date.today())
-due_date = st.text_input("Due Date", "On Receipt")
+# Tab 1: Generate Document
+with tab1:
+    st.header("Generate New Invoice/Quote")
+    doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
+    is_quote = doc_type == "Quote"
+    customer_name = st.text_input("Customer Name")
+    customer_address = st.text_area("Customer Address")
+    customer_phone = st.text_input("Customer Phone")
+    date = st.date_input("Date", datetime.date.today())
+    due_date = st.text_input("Due Date", "On Receipt")
 
-# Initialize items
-if "items" not in st.session_state:
-    st.session_state["items"] = []
+    # Initialize items
+    if "items" not in st.session_state:
+        st.session_state["items"] = []
 
-# Add items
-st.subheader("Add Items")
-description = st.text_input("Description")
-rate = st.number_input("Rate", min_value=0.0, step=0.01)
-quantity = st.number_input("Quantity", min_value=1, step=1)
-if st.button("Add Item"):
-    st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
-    st.success("Item added!")
+    # Add items
+    st.subheader("Add Items")
+    description = st.text_input("Description")
+    rate = st.number_input("Rate", min_value=0.0, step=0.01)
+    quantity = st.number_input("Quantity", min_value=1, step=1)
+    if st.button("Add Item"):
+        st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
+        st.success("Item added!")
 
-# Display added items
-if st.session_state["items"]:
-    st.subheader("Added Items")
-    for item in st.session_state["items"]:
-        st.write(f"{item['description']} - ${item['rate']:.2f} x {item['quantity']} = ${item['amount']:.2f}")
+    # Display added items
+    if st.session_state["items"]:
+        st.subheader("Added Items")
+        for item in st.session_state["items"]:
+            st.write(f"{item['description']} - ${item['rate']:.2f} x {item['quantity']} = ${item['amount']:.2f}")
 
-# Generate and save PDF
-if st.button("Generate PDF"):
-    invoice_number = get_next_invoice_number()
-    total_amount = sum(item['amount'] for item in st.session_state["items"])
-    balance_due = total_amount
-    file_name = f"{PDF_DIR}/{doc_type}_{invoice_number}.pdf"
-    create_invoice(file_name, invoice_number, date.strftime("%Y-%m-%d"), due_date, customer_name, customer_address, customer_phone, st.session_state["items"], total_amount, 0, balance_due, is_quote)
-    st.success(f"{doc_type} generated!")
-    st.session_state["items"] = []
+    # Generate and save PDF
+    if st.button("Generate PDF"):
+        invoice_number = get_next_invoice_number()
+        total_amount = sum(item['amount'] for item in st.session_state["items"])
+        balance_due = total_amount
+        sanitized_name = customer_name.replace(" ", "_")  # Replace spaces with underscores
+        file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
+        create_invoice(file_name, invoice_number, date.strftime("%Y-%m-%d"), due_date, customer_name, customer_address, customer_phone, st.session_state["items"], total_amount, 0, balance_due, is_quote)
+        st.success(f"{doc_type} generated!")
+        st.session_state["items"] = []
 
-# Portal to manage PDFs
-st.header("Manage Documents")
-pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
-for pdf_file in pdf_files:
-    col1, col2, col3 = st.columns([6, 1, 1])
-    with col1:
-        st.write(os.path.basename(pdf_file))
-    with col2:
-        if st.button("View", key=pdf_file):
-            with open(pdf_file, "rb") as f:
-                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf")
-    with col3:
-        if st.button("Delete", key=f"delete_{pdf_file}"):
-            os.remove(pdf_file)
-            st.success(f"{os.path.basename(pdf_file)} deleted!")
-            st.experimental_rerun()
-
-# Share via email
-st.header("Share Documents")
-recipient_email = st.text_input("Recipient Email")
-if st.button("Send Email"):
-    if pdf_files:
-        pdf_file_to_send = pdf_files[-1]  # Send the most recent file
-        send_email(recipient_email, pdf_file_to_send)
-        st.success(f"Email sent to {recipient_email}!")
-    else:
-        st.error("No documents available to send.")
+# Tab 2: Manage Documents
+with tab2:
+    st.header("Manage Documents")
+    pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
+    for pdf_file in pdf_files:
+        col1, col2, col3 = st.columns([6, 1, 1])
+        with col1:
+            st.write(os.path.basename(pdf_file))
+        with col2:
+            if st.button("View", key=pdf_file):
+                with open(pdf_file, "rb") as f:
+                    st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf")
+        with col3:
+            if st.button("Delete", key=f"delete_{pdf_file}"):
+                os.remove(pdf_file)
+                st.success(f"{os.path.basename(pdf_file)} deleted!")
+                st.experimental_rerun()
