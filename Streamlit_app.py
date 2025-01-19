@@ -7,18 +7,21 @@ import datetime
 
 # Function to create invoice/quote PDF
 def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, items, total_amount, payment, balance_due, is_quote=False):
-    # Get the current directory and define the logo path
+    # Ensure the logo file exists
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, "logo.jpg")  # Ensure logo.jpg is in the same directory as the script
+    logo_path = os.path.join(current_dir, "logo.jpg")  # Replace "logo.jpg" with your actual file name
 
     c = canvas.Canvas(file_name, pagesize=letter)
     title = "QUOTE" if is_quote else "INVOICE"
 
     # Add Logo
-    try:
-        c.drawImage(logo_path, 50, 740, width=100, height=50)
-    except Exception as e:
-        print(f"Error loading logo: {e}")
+    if os.path.exists(logo_path):
+        try:
+            c.drawImage(logo_path, 50, 740, width=100, height=50)
+        except Exception as e:
+            print(f"Error loading logo: {e}")
+    else:
+        print(f"Logo file not found at: {logo_path}")
 
     # Title
     c.setFont("Helvetica-Bold", 20)
