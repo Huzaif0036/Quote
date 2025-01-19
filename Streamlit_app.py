@@ -186,17 +186,25 @@ with tab1:
 # Tab 2: Manage Documents
 with tab2:
     st.header("Manage Documents")
+
+    # Initialize deleted_files list in session state
+    if "deleted_files" not in st.session_state:
+        st.session_state["deleted_files"] = []
+
     pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
+
     for pdf_file in pdf_files:
+        if os.path.basename(pdf_file) in st.session_state["deleted_files"]:
+            continue  # Skip deleted files
+
         col1, col2, col3 = st.columns([6, 1, 1])
         with col1:
             st.write(os.path.basename(pdf_file))
         with col2:
-            if st.button("View", key=pdf_file):
-                with open(pdf_file, "rb") as f:
-                    st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf")
+            with open(pdf_file, "rb") as f:
+                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf")
         with col3:
             if st.button("Delete", key=f"delete_{pdf_file}"):
                 os.remove(pdf_file)
+                st.session_state["deleted_files"].append(os.path.basename(pdf_file))
                 st.success(f"{os.path.basename(pdf_file)} deleted!")
-                st.experimental_rerun()
