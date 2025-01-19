@@ -4,12 +4,35 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 import datetime
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import glob
+
+# Directory to store PDFs
+PDF_DIR = "invoices"
+
+# Ensure the directory exists
+if not os.path.exists(PDF_DIR):
+    os.makedirs(PDF_DIR)
+
+# Function to get the next invoice number
+def get_next_invoice_number():
+    counter_file = "invoice_counter.txt"
+    if not os.path.exists(counter_file):
+        with open(counter_file, "w") as f:
+            f.write("1")
+    with open(counter_file, "r") as f:
+        current_number = int(f.read().strip())
+    with open(counter_file, "w") as f:
+        f.write(str(current_number + 1))
+    return f"{current_number:03d}"
 
 # Function to create invoice/quote PDF
 def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, items, total_amount, payment, balance_due, is_quote=False):
-    # Ensure the logo file exists
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, "logo.jpg")  # Ensure logo.jpg is in the same directory as the script
+    logo_path = os.path.join(current_dir, "logo.jpg")
 
     c = canvas.Canvas(file_name, pagesize=letter)
     title = "QUOTE" if is_quote else "INVOICE"
@@ -17,15 +40,13 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     # Add Logo
     if os.path.exists(logo_path):
         try:
-            c.drawImage(logo_path, 50, 740, width=100, height=50)
+            c.drawImage(logo_path, 50, 740, width=100, height=100)
         except Exception as e:
             print(f"Error loading logo: {e}")
-    else:
-        print(f"Logo file not found at: {logo_path}")
 
     # Title
     c.setFont("Helvetica-Bold", 20)
-    c.drawString(170, 750, f"Tranquil Heating and Cooling - {title} {invoice_number}")
+    c.drawString(170, 750, f"Tranquil Heating and Cooling")
 
     # Partition Line
     c.setStrokeColor(colors.black)
@@ -94,80 +115,97 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c.drawString(50, 50, "Thank you for choosing Tranquil Heating and Cooling!")
     c.save()
 
+# Function to send email with PDF
+def send_email(recipient_email, pdf_file_path):
+    sender_email = "your_email@example.com"
+    sender_password = "your_password"  # Use an app-specific password for Gmail/other providers
+
+    # Create the email
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = recipient_email
+    msg['Subject'] = "Your Invoice/Quote"
+
+    # Attach the PDF
+    with open(pdf_file_path, "rb") as f:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(f.read())
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{os.path.basename(pdf_file_path)}"')
+        msg.attach(part)
+
+    # Send the email
+    with smtplib.SMTP('smtp.gmail.com', 587) as server:
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+
 # Streamlit App
-st.title("Invoice/Quote Generator")
+st.title("Invoice/Quote Portal")
 
-# Step 1: Document Type Selection
-st.header("Step 1: Select Document Type")
-doc_type = st.radio("What would you like to generate?", options=["Invoice", "Quote"], horizontal=True)
+# Generate a new invoice
+st.header("Generate New Invoice/Quote")
+doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
 is_quote = doc_type == "Quote"
-
-# Step 2: Customer Details
-st.header("Step 2: Enter Customer Details")
 customer_name = st.text_input("Customer Name")
 customer_address = st.text_area("Customer Address")
-customer_phone = st.text_input("Customer Phone Number")
-invoice_number = st.text_input("Invoice/Quote Number", value="001")
-date = st.date_input("Date", value=datetime.date.today())
-due_date = st.text_input("Due Date", value="On Receipt")
+customer_phone = st.text_input("Customer Phone")
+date = st.date_input("Date", datetime.date.today())
+due_date = st.text_input("Due Date", "On Receipt")
 
-# Initialize session state for items
+# Initialize items
 if "items" not in st.session_state:
     st.session_state["items"] = []
 
-# Step 3: Add Items
-st.header("Step 3: Add Items")
-with st.form("add_item_form"):
-    description = st.text_input("Description", key="description_input")
-    rate = st.number_input("Rate", min_value=0.0, step=0.01, key="rate_input")
-    quantity = st.number_input("Quantity", min_value=1, step=1, key="quantity_input")
-    add_item = st.form_submit_button("Add Item")
-    if add_item:
-        st.session_state["items"].append(
-            {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
-        )
+# Add items
+st.subheader("Add Items")
+description = st.text_input("Description")
+rate = st.number_input("Rate", min_value=0.0, step=0.01)
+quantity = st.number_input("Quantity", min_value=1, step=1)
+if st.button("Add Item"):
+    st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
+    st.success("Item added!")
 
 # Display added items
 if st.session_state["items"]:
-    st.write("### Added Items")
+    st.subheader("Added Items")
     for item in st.session_state["items"]:
-        st.write(f"- {item['description']} - ${item['rate']:.2f} x {item['quantity']} = ${item['amount']:.2f}")
+        st.write(f"{item['description']} - ${item['rate']:.2f} x {item['quantity']} = ${item['amount']:.2f}")
 
-# Step 4: Summary and Generate PDF
-st.header("Step 4: Summary & PDF Generation")
-if st.session_state["items"]:
-    total_amount = sum(item["amount"] for item in st.session_state["items"])
-    payment = st.number_input("Payment Amount", min_value=0.0, max_value=total_amount, step=0.01, value=0.0)
-    balance_due = total_amount - payment
+# Generate and save PDF
+if st.button("Generate PDF"):
+    invoice_number = get_next_invoice_number()
+    total_amount = sum(item['amount'] for item in st.session_state["items"])
+    balance_due = total_amount
+    file_name = f"{PDF_DIR}/{doc_type}_{invoice_number}.pdf"
+    create_invoice(file_name, invoice_number, date.strftime("%Y-%m-%d"), due_date, customer_name, customer_address, customer_phone, st.session_state["items"], total_amount, 0, balance_due, is_quote)
+    st.success(f"{doc_type} generated!")
+    st.session_state["items"] = []
 
-    st.write("### Summary")
-    st.write(f"**Total Amount:** ${total_amount:.2f}")
-    st.write(f"**Payment:** ${payment:.2f}")
-    st.write(f"**Balance Due:** ${balance_due:.2f}")
+# Portal to manage PDFs
+st.header("Manage Documents")
+pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
+for pdf_file in pdf_files:
+    col1, col2, col3 = st.columns([6, 1, 1])
+    with col1:
+        st.write(os.path.basename(pdf_file))
+    with col2:
+        if st.button("View", key=pdf_file):
+            with open(pdf_file, "rb") as f:
+                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf")
+    with col3:
+        if st.button("Delete", key=f"delete_{pdf_file}"):
+            os.remove(pdf_file)
+            st.success(f"{os.path.basename(pdf_file)} deleted!")
+            st.experimental_rerun()
 
-    # Generate PDF Button
-    if st.button("Generate PDF"):
-        file_name = f"{doc_type}_{invoice_number}.pdf"
-        create_invoice(
-            file_name=file_name,
-            invoice_number=invoice_number,
-            date=date.strftime("%Y-%m-%d"),
-            due_date=due_date,
-            customer_name=customer_name,
-            customer_address=customer_address,
-            customer_phone=customer_phone,
-            items=st.session_state["items"],
-            total_amount=total_amount,
-            payment=payment,
-            balance_due=balance_due,
-            is_quote=is_quote,
-        )
-        with open(file_name, "rb") as pdf_file:
-            st.download_button(
-                label=f"Download {doc_type}",
-                data=pdf_file,
-                file_name=file_name,
-                mime="application/pdf",
-            )
-else:
-    st.write("No items added. Please add items to generate the invoice/quote.")
+# Share via email
+st.header("Share Documents")
+recipient_email = st.text_input("Recipient Email")
+if st.button("Send Email"):
+    if pdf_files:
+        pdf_file_to_send = pdf_files[-1]  # Send the most recent file
+        send_email(recipient_email, pdf_file_to_send)
+        st.success(f"Email sent to {recipient_email}!")
+    else:
+        st.error("No documents available to send.")
