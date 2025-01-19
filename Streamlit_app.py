@@ -9,7 +9,7 @@ import datetime
 def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, items, total_amount, payment, balance_due, is_quote=False):
     # Ensure the logo file exists
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, "logo.jpg")  # Replace "logo.jpg" with your actual file name
+    logo_path = os.path.join(current_dir, "logo.jpg")  # Ensure logo.jpg is in the same directory as the script
 
     c = canvas.Canvas(file_name, pagesize=letter)
     title = "QUOTE" if is_quote else "INVOICE"
@@ -27,6 +27,11 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c.setFont("Helvetica-Bold", 20)
     c.drawString(170, 750, f"Tranquil Heating and Cooling - {title} {invoice_number}")
 
+    # Partition Line
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(1)
+    c.line(50, 735, 550, 735)
+
     # Company Details
     c.setFont("Helvetica", 12)
     c.drawString(50, 715, "Tranquil Heating and Cooling")
@@ -40,6 +45,9 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c.drawString(400, 670, f"DUE: {due_date}")
     c.drawString(400, 655, f"BALANCE DUE: USD ${balance_due:.2f}")
 
+    # Partition Line
+    c.line(50, 650, 550, 650)
+
     # Customer Details
     c.setFont("Helvetica-Bold", 14)
     c.drawString(50, 630, "BILL TO")
@@ -47,6 +55,9 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c.drawString(50, 615, customer_name)
     c.drawString(50, 600, customer_address)
     c.drawString(50, 585, customer_phone)
+
+    # Partition Line
+    c.line(50, 580, 550, 580)
 
     # Table Header
     c.setFont("Helvetica-Bold", 12)
@@ -68,12 +79,15 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
         c.drawString(470, y, f"${item['amount']:.2f}")
         y -= 20
 
+    # Partition Line
+    c.line(50, y - 10, 550, y - 10)
+
     # Total Section
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(400, y - 10, f"TOTAL: USD ${total_amount:.2f}")
+    c.drawString(400, y - 30, f"TOTAL: USD ${total_amount:.2f}")
     c.setFont("Helvetica", 12)
-    c.drawString(400, y - 30, f"Payment: USD ${payment:.2f}")
-    c.drawString(400, y - 50, f"Balance Due: USD ${balance_due:.2f}")
+    c.drawString(400, y - 50, f"Payment: USD ${payment:.2f}")
+    c.drawString(400, y - 70, f"Balance Due: USD ${balance_due:.2f}")
 
     # Footer
     c.setFont("Helvetica", 10)
