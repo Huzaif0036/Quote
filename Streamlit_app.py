@@ -98,7 +98,10 @@ with st.form("add_item_form"):
         st.session_state["items"].append(
             {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
         )
-        st.experimental_rerun()  # Refresh the page to clear the form fields
+        # Clear the form fields by resetting the session state keys
+        st.session_state["description"] = ""
+        st.session_state["rate"] = 0.0
+        st.session_state["quantity"] = 1
 
 # Display added items
 if st.session_state["items"]:
