@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -6,47 +7,57 @@ import datetime
 
 # Function to create invoice/quote PDF
 def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, items, total_amount, payment, balance_due, is_quote=False):
+    # Get the current directory and define the logo path
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, "logo.jpg")  # Ensure logo.jpg is in the same directory as the script
+
     c = canvas.Canvas(file_name, pagesize=letter)
     title = "QUOTE" if is_quote else "INVOICE"
 
+    # Add Logo
+    try:
+        c.drawImage(logo_path, 50, 740, width=100, height=50)
+    except Exception as e:
+        print(f"Error loading logo: {e}")
+
     # Title
     c.setFont("Helvetica-Bold", 20)
-    c.drawString(220, 750, f"Tranquil Heating and Cooling - {title} {invoice_number}")
+    c.drawString(170, 750, f"Tranquil Heating and Cooling - {title} {invoice_number}")
 
     # Company Details
     c.setFont("Helvetica", 12)
-    c.drawString(50, 730, "Tranquil Heating and Cooling")
-    c.drawString(50, 715, "+1 773-672-9920")
-    c.drawString(50, 700, "tranquilservice93@gmail.com")
+    c.drawString(50, 715, "Tranquil Heating and Cooling")
+    c.drawString(50, 700, "+1 773-672-9920")
+    c.drawString(50, 685, "tranquilservice93@gmail.com")
 
     # Invoice Details
-    c.drawString(400, 730, f"{title}")
-    c.drawString(400, 715, f"INV{invoice_number}")
-    c.drawString(400, 700, f"DATE: {date}")
-    c.drawString(400, 685, f"DUE: {due_date}")
-    c.drawString(400, 670, f"BALANCE DUE: USD ${balance_due:.2f}")
+    c.drawString(400, 715, f"{title}")
+    c.drawString(400, 700, f"INV{invoice_number}")
+    c.drawString(400, 685, f"DATE: {date}")
+    c.drawString(400, 670, f"DUE: {due_date}")
+    c.drawString(400, 655, f"BALANCE DUE: USD ${balance_due:.2f}")
 
     # Customer Details
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, 650, "BILL TO")
+    c.drawString(50, 630, "BILL TO")
     c.setFont("Helvetica", 12)
-    c.drawString(50, 635, customer_name)
-    c.drawString(50, 620, customer_address)
-    c.drawString(50, 605, customer_phone)
+    c.drawString(50, 615, customer_name)
+    c.drawString(50, 600, customer_address)
+    c.drawString(50, 585, customer_phone)
 
     # Table Header
     c.setFont("Helvetica-Bold", 12)
     c.setFillColor(colors.lightgrey)
-    c.rect(50, 580, 500, 20, fill=True, stroke=False)
+    c.rect(50, 560, 500, 20, fill=True, stroke=False)
     c.setFillColor(colors.black)
-    c.drawString(55, 585, "DESCRIPTION")
-    c.drawString(355, 585, "RATE")
-    c.drawString(420, 585, "QTY")
-    c.drawString(470, 585, "AMOUNT")
+    c.drawString(55, 565, "DESCRIPTION")
+    c.drawString(355, 565, "RATE")
+    c.drawString(420, 565, "QTY")
+    c.drawString(470, 565, "AMOUNT")
 
     # Table Rows
     c.setFont("Helvetica", 12)
-    y = 560
+    y = 540
     for item in items:
         c.drawString(55, y, item["description"])
         c.drawString(355, y, f"${item['rate']:.2f}")
@@ -69,12 +80,12 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
 # Streamlit App
 st.title("Invoice/Quote Generator")
 
-# Section 1: Type Selection
+# Step 1: Document Type Selection
 st.header("Step 1: Select Document Type")
 doc_type = st.radio("What would you like to generate?", options=["Invoice", "Quote"], horizontal=True)
 is_quote = doc_type == "Quote"
 
-# Section 2: Customer Details
+# Step 2: Customer Details
 st.header("Step 2: Enter Customer Details")
 customer_name = st.text_input("Customer Name")
 customer_address = st.text_area("Customer Address")
@@ -83,14 +94,12 @@ invoice_number = st.text_input("Invoice/Quote Number", value="001")
 date = st.date_input("Date", value=datetime.date.today())
 due_date = st.text_input("Due Date", value="On Receipt")
 
-# Initialize session state for items if not already done
+# Initialize session state for items
 if "items" not in st.session_state:
     st.session_state["items"] = []
 
-# Section 3: Add Items
+# Step 3: Add Items
 st.header("Step 3: Add Items")
-
-# Form to add items
 with st.form("add_item_form"):
     description = st.text_input("Description", key="description_input")
     rate = st.number_input("Rate", min_value=0.0, step=0.01, key="rate_input")
@@ -100,8 +109,6 @@ with st.form("add_item_form"):
         st.session_state["items"].append(
             {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
         )
-        # Clear the form fields by resetting the session state keys
-        st.experimental_set_query_params()  # This will refresh the form fields
 
 # Display added items
 if st.session_state["items"]:
@@ -109,7 +116,7 @@ if st.session_state["items"]:
     for item in st.session_state["items"]:
         st.write(f"- {item['description']} - ${item['rate']:.2f} x {item['quantity']} = ${item['amount']:.2f}")
 
-# Section 4: Summary and Generate PDF
+# Step 4: Summary and Generate PDF
 st.header("Step 4: Summary & PDF Generation")
 if st.session_state["items"]:
     total_amount = sum(item["amount"] for item in st.session_state["items"])
@@ -138,8 +145,6 @@ if st.session_state["items"]:
             balance_due=balance_due,
             is_quote=is_quote,
         )
-
-        # Provide Download Button
         with open(file_name, "rb") as pdf_file:
             st.download_button(
                 label=f"Download {doc_type}",
