@@ -43,10 +43,10 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
 
         # Add Logo and Space
         y_position = 730
-        if os.path.exists(logo_path):
+        if os.path.exists(LOGO_PATH):
             try:
                 # Adjust the dimensions and positioning of the logo to avoid cutting
-                c.drawImage(logo_path, 50, y_position - 100, width=100, height=100)  # Adjust position
+                c.drawImage(LOGO_PATH, 50, y_position - 100, width=100, height=100)  # Adjust position
             except Exception as e:
                 print(f"Error loading logo: {e}")
         y_position -= 120  # Space below logo
