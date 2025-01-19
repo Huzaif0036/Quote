@@ -40,13 +40,13 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     # Add Logo
     if os.path.exists(logo_path):
         try:
-            c.drawImage(logo_path, 50, 740, width=100, height=100)
+            c.drawImage(logo_path, 50, 740, width=100, height=50)
         except Exception as e:
             print(f"Error loading logo: {e}")
 
     # Title
     c.setFont("Helvetica-Bold", 20)
-    c.drawString(170, 750, f"Tranquil Heating and Cooling")
+    c.drawString(170, 750, f"Tranquil Heating and Cooling - {title} {invoice_number}")
 
     # Partition Line
     c.setStrokeColor(colors.black)
