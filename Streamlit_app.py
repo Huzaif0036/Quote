@@ -144,3 +144,5 @@ if st.session_state["items"]:
                 file_name=file_name,
                 mime="application/pdf",
             )
+else:
+    st.write("No items added. Please add items to generate the invoice/quote.")
