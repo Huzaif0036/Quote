@@ -83,18 +83,12 @@ invoice_number = st.text_input("Invoice/Quote Number", value="001")
 date = st.date_input("Date", value=datetime.date.today())
 due_date = st.text_input("Due Date", value="On Receipt")
 
-# Initialize session state for form fields if not already done
-if "description" not in st.session_state:
-    st.session_state["description"] = ""
-if "rate" not in st.session_state:
-    st.session_state["rate"] = 0.0
-if "quantity" not in st.session_state:
-    st.session_state["quantity"] = 1
+# Initialize session state for items if not already done
+if "items" not in st.session_state:
+    st.session_state["items"] = []
 
 # Section 3: Add Items
 st.header("Step 3: Add Items")
-if "items" not in st.session_state:
-    st.session_state["items"] = []
 
 # Form to add items
 with st.form("add_item_form"):
@@ -107,9 +101,7 @@ with st.form("add_item_form"):
             {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
         )
         # Clear the form fields by resetting the session state keys
-        st.session_state["description_input"] = ""
-        st.session_state["rate_input"] = 0.0
-        st.session_state["quantity_input"] = 1
+        st.experimental_set_query_params()  # This will refresh the form fields
 
 # Display added items
 if st.session_state["items"]:
