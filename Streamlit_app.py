@@ -183,6 +183,15 @@ with tab1:
                 st.success(f"{doc_type} generated!")
                 st.session_state["items"] = []
 
+                # Add download button
+                with open(file_name, "rb") as f:
+                    st.download_button(
+                        label="Download PDF",
+                        data=f,
+                        file_name=os.path.basename(file_name),
+                        mime="application/pdf"
+                    )
+
 # Tab 2: Manage Documents
 with tab2:
     st.header("Manage Documents")
