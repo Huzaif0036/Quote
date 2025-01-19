@@ -98,18 +98,18 @@ if "items" not in st.session_state:
 
 # Form to add items
 with st.form("add_item_form"):
-    description = st.text_input("Description", key="description")
-    rate = st.number_input("Rate", min_value=0.0, step=0.01, key="rate")
-    quantity = st.number_input("Quantity", min_value=1, step=1, key="quantity")
+    description = st.text_input("Description", key="description_input")
+    rate = st.number_input("Rate", min_value=0.0, step=0.01, key="rate_input")
+    quantity = st.number_input("Quantity", min_value=1, step=1, key="quantity_input")
     add_item = st.form_submit_button("Add Item")
     if add_item:
         st.session_state["items"].append(
             {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
         )
-        # Reset form fields
-        st.session_state["description"] = ""
-        st.session_state["rate"] = 0.0
-        st.session_state["quantity"] = 1
+        # Clear the form fields by resetting the session state keys
+        st.session_state["description_input"] = ""
+        st.session_state["rate_input"] = 0.0
+        st.session_state["quantity_input"] = 1
 
 # Display added items
 if st.session_state["items"]:
