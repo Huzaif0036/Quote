@@ -33,39 +33,39 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c = canvas.Canvas(file_name, pagesize=letter)
     title = "QUOTE" if is_quote else "INVOICE"
 
-    # Add Logo
-    y_position = 750
+    # Add Logo and Space
+    y_position = 730
     if os.path.exists(logo_path):
         try:
-            c.drawImage(logo_path, 50, y_position, width=100, height=100)
+            c.drawImage(logo_path, 50, y_position, width=100, height=100)  # 100x100 logo
         except Exception as e:
             print(f"Error loading logo: {e}")
-    y_position -= 120  # Adjust to add space below the logo
+    y_position -= 120  # Space below logo
 
     # Title
     c.setFont("Helvetica-Bold", 20)
-    c.drawString(170, y_position + 30, f"Tranquil Heating and Cooling - {title} {invoice_number}")
+    c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling - {title} {invoice_number}")
 
     # Partition Line
     c.setStrokeColor(colors.black)
     c.setLineWidth(1)
-    c.line(50, y_position + 10, 550, y_position + 10)
+    c.line(50, y_position + 40, 550, y_position + 40)
 
     # Company Details
     c.setFont("Helvetica", 12)
-    c.drawString(50, y_position - 10, "Tranquil Heating and Cooling")
-    c.drawString(50, y_position - 25, "+1 773-672-9920")
-    c.drawString(50, y_position - 40, "tranquilservice93@gmail.com")
+    c.drawString(50, y_position + 20, "Tranquil Heating and Cooling")
+    c.drawString(50, y_position + 5, "+1 773-672-9920")
+    c.drawString(50, y_position - 10, "tranquilservice93@gmail.com")
 
     # Invoice Details
-    c.drawString(400, y_position - 10, f"{title}")
-    c.drawString(400, y_position - 25, f"INV{invoice_number}")
-    c.drawString(400, y_position - 40, f"DATE: {date}")
-    c.drawString(400, y_position - 55, f"DUE: {due_date}")
-    c.drawString(400, y_position - 70, f"BALANCE DUE: USD ${balance_due:.2f}")
+    c.drawString(400, y_position + 20, f"{title}")
+    c.drawString(400, y_position + 5, f"INV{invoice_number}")
+    c.drawString(400, y_position - 10, f"DATE: {date}")
+    c.drawString(400, y_position - 25, f"DUE: {due_date}")
+    c.drawString(400, y_position - 40, f"BALANCE DUE: USD ${balance_due:.2f}")
 
     # Partition Line
-    y_position -= 80
+    y_position -= 60
     c.line(50, y_position, 550, y_position)
 
     # Customer Details
@@ -77,7 +77,7 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
     c.drawString(50, y_position - 65, customer_phone)
 
     # Partition Line
-    y_position -= 80
+    y_position -= 90
     c.line(50, y_position, 550, y_position)
 
     # Table Header
@@ -142,12 +142,6 @@ with tab1:
     if st.button("Add Item"):
         st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
         st.success("Item added!")
-
-    # Display added items
-    if st.session_state["items"]:
-        st.subheader("Added Items")
-        for item in st.session_state["items"]:
-            st.write(f"{item['description']} - ${item['rate']:.2f} x {item['quantity']} = ${item['amount']:.2f}")
 
     # Calculate total and balance
     if st.session_state["items"]:
