@@ -217,18 +217,29 @@ with tab2:
 
     pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
 
+    document_list = []
     for pdf_file in pdf_files:
         if os.path.basename(pdf_file) in st.session_state["deleted_files"]:
             continue  # Skip deleted files
+        
+        document_list.append({
+            "file_name": os.path.basename(pdf_file),
+            "file_path": pdf_file
+        })
 
-        col1, col2, col3 = st.columns([6, 1, 1])
-        with col1:
-            st.write(os.path.basename(pdf_file))
-        with col2:
-            with open(pdf_file, "rb") as f:
-                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf", key=f"download_{pdf_file}")
-        with col3:
-            if st.button("Delete", key=f"delete_{pdf_file}"):
-                os.remove(pdf_file)
-                st.session_state["deleted_files"].append(os.path.basename(pdf_file))
-                st.success(f"{os.path.basename(pdf_file)} deleted!")
+    if document_list:
+        for doc in document_list:
+            col1, col2, col3 = st.columns([6, 1, 1])
+            with col1:
+                st.write(doc["file_name"])
+            with col2:
+                with open(doc["file_path"], "rb") as f:
+                    st.download_button("Download PDF", f, doc["file_name"], mime="application/pdf", key=f"download_{doc['file_name']}")
+            with col3:
+                if st.button("Delete", key=f"delete_{doc['file_name']}"):
+                    os.remove(doc["file_path"])
+                    st.session_state["deleted_files"].append(doc["file_name"])
+                    st.success(f"{doc['file_name']} deleted!")
+                    st.experimental_rerun()  # Refresh the page after deletion
+    else:
+        st.write("No documents found.")
