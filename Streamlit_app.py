@@ -139,70 +139,73 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
         st.error(f"Error generating {title}: {e}")
 
 # Streamlit App
+st.set_page_config(page_title="Invoice/Quote Portal", layout="wide")
 st.title("Invoice/Quote Portal")
+
 tab1, tab2 = st.tabs(["Generate Document", "Manage Documents"])
 
 # Tab 1: Generate Document
 with tab1:
     st.header("Generate New Invoice/Quote")
-    doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
-    is_quote = doc_type == "Quote"
-    customer_name = st.text_input("Customer Name")
-    customer_address = st.text_area("Customer Address")
-    customer_phone = st.text_input("Customer Phone (format: 7894560213)")
-    customer_email = st.text_input("Customer Email (optional)")
-    date = st.date_input("Date", datetime.date.today())
-    due_date = st.text_input("Due Date", "On Receipt")
+    with st.form(key='generate_form'):
+        doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
+        is_quote = doc_type == "Quote"
+        customer_name = st.text_input("Customer Name", placeholder="John Doe")
+        customer_address = st.text_area("Customer Address", placeholder="1234 Elm Street, Springfield, IL")
+        customer_phone = st.text_input("Customer Phone (format: 7894560213)", placeholder="7894560213")
+        customer_email = st.text_input("Customer Email (optional)", placeholder="john.doe@example.com")
+        date = st.date_input("Date", datetime.date.today())
+        due_date = st.text_input("Due Date", "On Receipt")
 
-    # Validate customer details
-    if not customer_name or not customer_address or not customer_phone:
-        st.warning("Please fill in all customer details.")
+        # Validate customer details
+        if not customer_name or not customer_address or not customer_phone:
+            st.warning("Please fill in all customer details.")
 
-    # Initialize items
-    if "items" not in st.session_state:
-        st.session_state["items"] = []
+        # Initialize items
+        if "items" not in st.session_state:
+            st.session_state["items"] = []
 
-    # Add items
-    st.subheader("Add Items")
-    description = st.text_input("Description")
-    rate = st.number_input("Rate", min_value=0.0, step=0.01)
-    quantity = st.number_input("Quantity", min_value=1, step=1)
-    if st.button("Add Item"):
-        if description and rate > 0 and quantity > 0:
-            st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
-            st.success("Item added!")
-        else:
-            st.error("Please provide valid item details.")
+        # Add items
+        st.subheader("Add Items")
+        description = st.text_input("Description")
+        rate = st.number_input("Rate", min_value=0.0, step=0.01)
+        quantity = st.number_input("Quantity", min_value=1, step=1)
+        if st.form_submit_button("Add Item"):
+            if description and rate > 0 and quantity > 0:
+                st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
+                st.success("Item added!")
+            else:
+                st.error("Please provide valid item details.")
 
-    # Calculate total and balance
-    if st.session_state["items"]:
-        total_amount = sum(item['amount'] for item in st.session_state["items"])
-        payment = st.number_input("Payment Amount", min_value=0.0, max_value=total_amount, step=0.01, value=0.0)
-        balance_due = total_amount - payment
+        # Calculate total and balance
+        if st.session_state["items"]:
+            total_amount = sum(item['amount'] for item in st.session_state["items"])
+            payment = st.number_input("Payment Amount", min_value=0.0, max_value=total_amount, step=0.01, value=0.0)
+            balance_due = total_amount - payment
 
-        st.write(f"**Total Amount:** USD ${total_amount:.2f}")
-        st.write(f"**Payment:** USD ${payment:.2f}")
-        st.write(f"**Balance Due:** USD ${balance_due:.2f}")
+            st.write(f"**Total Amount:** USD ${total_amount:.2f}")
+            st.write(f"**Payment:** USD ${payment:.2f}")
+            st.write(f"**Balance Due:** USD ${balance_due:.2f}")
 
-        # Generate and save PDF
-        if st.button("Generate PDF"):
-            invoice_number = get_next_invoice_number()
-            if invoice_number:  # Ensure invoice number is valid
-                sanitized_name = customer_name.replace(" ", "_")
-                file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
-                create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, st.session_state["items"], total_amount, payment, balance_due, is_quote)
-                st.success(f"{doc_type} generated!")
-                st.session_state["items"] = []
+            # Generate and save PDF
+            if st.form_submit_button("Generate PDF"):
+                invoice_number = get_next_invoice_number()
+                if invoice_number:  # Ensure invoice number is valid
+                    sanitized_name = customer_name.replace(" ", "_")
+                    file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
+                    create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, st.session_state["items"], total_amount, payment, balance_due, is_quote)
+                    st.success(f"{doc_type} generated!")
+                    st.session_state["items"] = []
 
-                # Add download button
-                with open(file_name, "rb") as f:
-                    st.download_button(
-                        label="Download PDF",
-                        data=f,
-                        file_name=os.path.basename(file_name),
-                        mime="application/pdf",
-                        key=f"download_{invoice_number}"  # Unique key for each download button
-                    )
+                    # Add download button
+                    with open(file_name, "rb") as f:
+                        st.download_button(
+                            label="Download PDF",
+                            data=f,
+                            file_name=os.path.basename(file_name),
+                            mime="application/pdf",
+                            key=f"download_{invoice_number}"  # Unique key for each download button
+                        )
 
 # Tab 2: Manage Documents
 with tab2:
