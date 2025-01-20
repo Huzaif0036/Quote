@@ -139,48 +139,47 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
         st.error(f"Error generating {title}: {e}")
 
 # Streamlit App
-st.title("Invoice/Quote Portal")
-tab1, tab2 = st.tabs(["Generate Document", "Manage Documents"])
+st.set_page_config(page_title="Invoice/Quote Portal", layout="wide")  # Wide layout for more space
 
-# Tab 1: Generate Document
-with tab1:
-    st.header("Generate New Invoice/Quote")
-    doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
-    is_quote = doc_type == "Quote"
+# Create Sidebar for Navigation
+with st.sidebar:
+    st.image(LOGO_PATH, width=150)  # Logo in Sidebar
+    st.header("Navigation")
+    st.radio("Go to", ["Generate Document", "Manage Documents"], key="navigation")
+
+# Main Content Area (Dynamic based on selected page)
+if st.session_state.get("navigation") == "Generate Document":
+    st.title("Create Invoice/Quote")
     
-    # Use containers for better structure
-    with st.container():
-        st.text_input("Customer Name", key="customer_name")
+    # Styled Card for form input
+    with st.expander("Fill in Customer Details", expanded=True):
+        st.text_input("Customer Name", key="customer_name", label_visibility="visible")
         st.text_area("Customer Address", key="customer_address", height=100)
-        st.text_input("Customer Phone (format: 7894560213)", key="customer_phone")
-        st.text_input("Customer Email (optional)", key="customer_email")
+        st.text_input("Phone Number", key="customer_phone")
+        st.text_input("Email (optional)", key="customer_email")
         date = st.date_input("Date", datetime.date.today())
         due_date = st.text_input("Due Date", "On Receipt")
 
-    # Validate customer details
-    if not st.session_state.get("customer_name") or not st.session_state.get("customer_address") or not st.session_state.get("customer_phone"):
-        st.warning("Please fill in all customer details.")
-
-    # Initialize items
+    # Initialize items list in session state
     if "items" not in st.session_state:
         st.session_state["items"] = []
 
     # Add items
-    st.subheader("Add Items")
-    description = st.text_input("Description")
-    rate = st.number_input("Rate", min_value=0.0, step=0.01)
-    quantity = st.number_input("Quantity", min_value=1, step=1)
-    if st.button("Add Item"):
-        if description and rate > 0 and quantity > 0:
-            st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
-            st.success("Item added!")
-        else:
-            st.error("Please provide valid item details.")
+    with st.expander("Add Items", expanded=True):
+        description = st.text_input("Item Description")
+        rate = st.number_input("Rate", min_value=0.0, step=0.01)
+        quantity = st.number_input("Quantity", min_value=1, step=1)
+        if st.button("Add Item"):
+            if description and rate > 0 and quantity > 0:
+                st.session_state["items"].append({"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity})
+                st.success("Item added!")
+            else:
+                st.error("Please provide valid item details.")
 
-    # Calculate total and balance
+    # Total and balance
     if st.session_state["items"]:
         total_amount = sum(item['amount'] for item in st.session_state["items"])
-        payment = st.number_input("Payment Amount", min_value=0.0, max_value=total_amount, step=0.01, value=0.0)
+        payment = st.number_input("Payment", min_value=0.0, max_value=total_amount, step=0.01, value=0.0)
         balance_due = total_amount - payment
 
         st.write(f"**Total Amount:** USD ${total_amount:.2f}")
@@ -192,10 +191,9 @@ with tab1:
             invoice_number = get_next_invoice_number()
             if invoice_number:  # Ensure invoice number is valid
                 sanitized_name = st.session_state["customer_name"].replace(" ", "_")
-                file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
-                create_invoice(file_name, invoice_number, date, due_date, st.session_state["customer_name"], st.session_state["customer_address"], st.session_state["customer_phone"], st.session_state["customer_email"], st.session_state["items"], total_amount, payment, balance_due, is_quote)
-                st.success(f"{doc_type} generated!")
-                st.session_state["items"] = []
+                file_name = f"{PDF_DIR}/{sanitized_name}_{'Quote' if st.radio('Select Document Type', options=['Invoice', 'Quote']) == 'Quote' else 'Invoice'}.pdf"
+                create_invoice(file_name, invoice_number, date, due_date, st.session_state["customer_name"], st.session_state["customer_address"], st.session_state["customer_phone"], st.session_state["customer_email"], st.session_state["items"], total_amount, payment, balance_due, is_quote=True)
+                st.success("Document generated!")
 
                 # Add download button
                 with open(file_name, "rb") as f:
@@ -204,31 +202,18 @@ with tab1:
                         data=f,
                         file_name=os.path.basename(file_name),
                         mime="application/pdf",
-                        key=f"download_{invoice_number}"  # Unique key for each download button
                     )
 
-# Tab 2: Manage Documents
-with tab2:
-    st.header("Manage Documents")
+elif st.session_state.get("navigation") == "Manage Documents":
+    st.title("Manage Documents")
 
-    # Initialize deleted_files list in session state
-    if "deleted_files" not in st.session_state:
-        st.session_state["deleted_files"] = []
-
+    # Manage Document section
     pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
-
     for pdf_file in pdf_files:
-        if os.path.basename(pdf_file) in st.session_state["deleted_files"]:
-            continue  # Skip deleted files
-
-        col1, col2, col3 = st.columns([6, 1, 1])
+        col1, col2 = st.columns([5, 1])
         with col1:
             st.write(os.path.basename(pdf_file))
         with col2:
             with open(pdf_file, "rb") as f:
-                st.download_button("Download PDF", f, os.path.basename(pdf_file), mime="application/pdf", key=f"download_{pdf_file}")
-        with col3:
-            if st.button("Delete", key=f"delete_{pdf_file}"):
-                os.remove(pdf_file)
-                st.session_state["deleted_files"].append(os.path.basename(pdf_file))
-                st.success(f"{os.path.basename(pdf_file)} deleted!")
+                st.download_button("Download", f, os.path.basename(pdf_file), mime="application/pdf")
+
