@@ -147,15 +147,18 @@ with tab1:
     st.header("Generate New Invoice/Quote")
     doc_type = st.radio("Select Document Type", options=["Invoice", "Quote"])
     is_quote = doc_type == "Quote"
-    customer_name = st.text_input("Customer Name")
-    customer_address = st.text_area("Customer Address")
-    customer_phone = st.text_input("Customer Phone (format: 7894560213)")
-    customer_email = st.text_input("Customer Email (optional)")
-    date = st.date_input("Date", datetime.date.today())
-    due_date = st.text_input("Due Date", "On Receipt")
+    
+    # Use containers for better structure
+    with st.container():
+        st.text_input("Customer Name", key="customer_name")
+        st.text_area("Customer Address", key="customer_address", height=100)
+        st.text_input("Customer Phone (format: 7894560213)", key="customer_phone")
+        st.text_input("Customer Email (optional)", key="customer_email")
+        date = st.date_input("Date", datetime.date.today())
+        due_date = st.text_input("Due Date", "On Receipt")
 
     # Validate customer details
-    if not customer_name or not customer_address or not customer_phone:
+    if not st.session_state.get("customer_name") or not st.session_state.get("customer_address") or not st.session_state.get("customer_phone"):
         st.warning("Please fill in all customer details.")
 
     # Initialize items
@@ -188,9 +191,9 @@ with tab1:
         if st.button("Generate PDF"):
             invoice_number = get_next_invoice_number()
             if invoice_number:  # Ensure invoice number is valid
-                sanitized_name = customer_name.replace(" ", "_")
+                sanitized_name = st.session_state["customer_name"].replace(" ", "_")
                 file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
-                create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, st.session_state["items"], total_amount, payment, balance_due, is_quote)
+                create_invoice(file_name, invoice_number, date, due_date, st.session_state["customer_name"], st.session_state["customer_address"], st.session_state["customer_phone"], st.session_state["customer_email"], st.session_state["items"], total_amount, payment, balance_due, is_quote)
                 st.success(f"{doc_type} generated!")
                 st.session_state["items"] = []
 
