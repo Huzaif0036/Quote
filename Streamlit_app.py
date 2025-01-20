@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # Function to get the next invoice number
 def get_next_invoice_number():
     try:
-        if not os.path.exists(COUNTER_FILE):
+        if not os.pathExists(COUNTER_FILE):
             with open(COUNTER_FILE, "w") as f:
                 f.write("1")
         with open(COUNTER_FILE, "r") as f:
