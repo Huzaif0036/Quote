@@ -53,11 +53,10 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
         y_position = 730
         if os.path.exists(LOGO_PATH):
             try:
-                # Adjust the dimensions and positioning of the logo to avoid cutting
-                c.drawImage(LOGO_PATH, 50, y_position - 100, width=100, height=100)  # Adjust position
+                c.drawImage(LOGO_PATH, 50, y_position - 100, width=100, height=100)
             except Exception as e:
-                print(f"Error loading logo: {e}")
-        y_position -= 120  # Space below logo
+                logger.error(f"Error loading logo: {e}")
+        y_position -= 120
 
         # Title
         c.setFont("Helvetica-Bold", 20)
@@ -198,20 +197,23 @@ with tab1:
                     st.session_state["items"] = []
 
                     # Add download button
-                    with open(file_name, "rb") as f:
+                    try:
+                        with open(file_name, "rb") as f:
+                            pdf_data = f.read()
                         st.download_button(
                             label="Download PDF",
-                            data=f,
+                            data=pdf_data,
                             file_name=os.path.basename(file_name),
                             mime="application/pdf",
-                            key=f"download_{invoice_number}"  # Unique key for each download button
+                            key=f"download_{invoice_number}"
                         )
+                    except Exception as e:
+                        st.error(f"Error preparing download: {e}")
 
 # Tab 2: Manage Documents
 with tab2:
     st.header("Manage Documents")
 
-    # Initialize deleted_files list in session state
     if "deleted_files" not in st.session_state:
         st.session_state["deleted_files"] = []
 
@@ -220,8 +222,7 @@ with tab2:
     document_list = []
     for pdf_file in pdf_files:
         if os.path.basename(pdf_file) in st.session_state["deleted_files"]:
-            continue  # Skip deleted files
-        
+            continue
         document_list.append({
             "file_name": os.path.basename(pdf_file),
             "file_path": pdf_file
@@ -234,12 +235,12 @@ with tab2:
                 st.write(doc["file_name"])
             with col2:
                 with open(doc["file_path"], "rb") as f:
-                    st.download_button("Download PDF", f, doc["file_name"], mime="application/pdf", key=f"download_{doc['file_name']}")
+                    st.download_button("Download PDF", f.read(), doc["file_name"], mime="application/pdf", key=f"download_{doc['file_name']}")
             with col3:
                 if st.button("Delete", key=f"delete_{doc['file_name']}"):
                     os.remove(doc["file_path"])
                     st.session_state["deleted_files"].append(doc["file_name"])
                     st.success(f"{doc['file_name']} deleted!")
-                    st.experimental_rerun()  # Refresh the page after deletion
+                    st.experimental_rerun()
     else:
         st.write("No documents found.")
