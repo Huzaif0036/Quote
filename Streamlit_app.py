@@ -61,7 +61,7 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
 
         # Title
         c.setFont("Helvetica-Bold", 20)
-        c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling")
+        c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling - {title} {invoice_number}")
 
         # Partition Line
         c.setStrokeColor(colors.black)
@@ -151,6 +151,9 @@ with st.sidebar:
 if st.session_state.get("navigation") == "Generate Document":
     st.title("Create Invoice/Quote")
     
+    # Select Document Type (Invoice or Quote) at the top
+    document_type = st.radio("Select Document Type", ["Invoice", "Quote"], key="document_type")
+
     # Styled Card for form input
     with st.expander("Fill in Customer Details", expanded=True):
         st.text_input("Customer Name", key="customer_name", label_visibility="visible")
@@ -191,8 +194,8 @@ if st.session_state.get("navigation") == "Generate Document":
             invoice_number = get_next_invoice_number()
             if invoice_number:  # Ensure invoice number is valid
                 sanitized_name = st.session_state["customer_name"].replace(" ", "_")
-                file_name = f"{PDF_DIR}/{sanitized_name}_{'Quote' if st.radio('Select Document Type', options=['Invoice', 'Quote']) == 'Quote' else 'Invoice'}.pdf"
-                create_invoice(file_name, invoice_number, date, due_date, st.session_state["customer_name"], st.session_state["customer_address"], st.session_state["customer_phone"], st.session_state["customer_email"], st.session_state["items"], total_amount, payment, balance_due, is_quote=True)
+                file_name = f"{PDF_DIR}/{sanitized_name}_{'Quote' if document_type == 'Quote' else 'Invoice'}.pdf"
+                create_invoice(file_name, invoice_number, date, due_date, st.session_state["customer_name"], st.session_state["customer_address"], st.session_state["customer_phone"], st.session_state["customer_email"], st.session_state["items"], total_amount, payment, balance_due, is_quote=(document_type == "Quote"))
                 st.success("Document generated!")
 
                 # Add download button
