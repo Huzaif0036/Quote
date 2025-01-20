@@ -61,7 +61,7 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
 
         # Title
         c.setFont("Helvetica-Bold", 20)
-        c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling - {title} {invoice_number}")
+        c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling")
 
         # Partition Line
         c.setStrokeColor(colors.black)
