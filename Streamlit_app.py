@@ -48,7 +48,7 @@ def format_phone_number(phone):
     return f"{phone[:3]}-{phone[3:6]}-{phone[6:]}"
 
 # Function to create invoice/estimate PDF
-def create_invoice(file_name, doc_type, invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, items, total_amount, payment, balance_due):
+def create_invoice(file_name, doc_type, invoice_number, date, customer_name, customer_address, customer_phone, customer_email, items, total_amount, payment, balance_due):
     try:
         c = canvas.Canvas(file_name, pagesize=letter)
         title = "ESTIMATE" if doc_type == "estimate" else "INVOICE"
@@ -61,7 +61,7 @@ def create_invoice(file_name, doc_type, invoice_number, date, due_date, customer
 
         # Title
         c.setFont("Helvetica-Bold", 20)
-        c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling - {title} {invoice_number}")
+        c.drawString(170, y_position + 50, f"Tranquil Heating and Cooling")
 
         # Partition Line
         c.setStrokeColor(colors.black)
@@ -78,10 +78,11 @@ def create_invoice(file_name, doc_type, invoice_number, date, due_date, customer
         c.drawString(400, y_position + 20, f"{title}")
         c.drawString(400, y_position + 5, f"{invoice_number}")
         c.drawString(400, y_position - 10, f"DATE: {format_date(date)}")
-        c.drawString(400, y_position - 25, f"DUE: {due_date}")
         
         if doc_type == "invoice":
             c.drawString(400, y_position - 40, f"BALANCE DUE: USD ${balance_due:.2f}")
+        else:
+            c.drawString(400, y_position - 40, f"TOTAL: USD ${total_amount:.2f}")
 
         # Customer Details
         c.setFont("Helvetica-Bold", 14)
@@ -147,7 +148,6 @@ with tab1:
     customer_phone = st.text_input("Customer Phone (format: 7894560213)")
     customer_email = st.text_input("Customer Email (optional)")
     date = st.date_input("Date", datetime.date.today())
-    due_date = st.text_input("Due Date", "On Receipt")
 
     # Validate customer details
     if not customer_name or not customer_address or not customer_phone:
@@ -185,7 +185,7 @@ with tab1:
             if invoice_number:  # Ensure invoice number is valid
                 sanitized_name = customer_name.replace(" ", "_")
                 file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
-                create_invoice(file_name, "estimate" if is_estimate else "invoice", invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, st.session_state["items"], total_amount, payment, balance_due)
+                create_invoice(file_name, "estimate" if is_estimate else "invoice", invoice_number, date, customer_name, customer_address, customer_phone, customer_email, st.session_state["items"], total_amount, payment, balance_due)
                 st.success(f"{doc_type} generated!")
                 st.session_state["items"] = []
 
