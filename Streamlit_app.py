@@ -35,6 +35,10 @@ def get_next_invoice_number():
         st.error(f"Error generating invoice number: {e}")
         return None
 
+# Function to format date to MM/DD/YYYY
+def format_date(date):
+    return date.strftime("%m/%d/%Y")
+
 # Function to create invoice/quote PDF
 def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, items, total_amount, payment, balance_due, is_quote=False):
     try:
@@ -69,7 +73,7 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
         # Invoice Details
         c.drawString(400, y_position + 20, f"{title}")
         c.drawString(400, y_position + 5, f"INV{invoice_number}")
-        c.drawString(400, y_position - 10, f"DATE: {date}")
+        c.drawString(400, y_position - 10, f"DATE: {format_date(date)}")
         c.drawString(400, y_position - 25, f"DUE: {due_date}")
         c.drawString(400, y_position - 40, f"BALANCE DUE: USD ${balance_due:.2f}")
 
@@ -179,7 +183,7 @@ with tab1:
             if invoice_number:  # Ensure invoice number is valid
                 sanitized_name = customer_name.replace(" ", "_")
                 file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
-                create_invoice(file_name, invoice_number, date.strftime("%Y-%m-%d"), due_date, customer_name, customer_address, customer_phone, st.session_state["items"], total_amount, payment, balance_due, is_quote)
+                create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, st.session_state["items"], total_amount, payment, balance_due, is_quote)
                 st.success(f"{doc_type} generated!")
                 st.session_state["items"] = []
 
