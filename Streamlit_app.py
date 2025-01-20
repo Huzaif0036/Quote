@@ -39,8 +39,12 @@ def get_next_invoice_number():
 def format_date(date):
     return date.strftime("%m/%d/%Y")
 
+# Function to format phone number to 789-456-0213
+def format_phone_number(phone):
+    return f"{phone[:3]}-{phone[3:6]}-{phone[6:]}"
+
 # Function to create invoice/quote PDF
-def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, items, total_amount, payment, balance_due, is_quote=False):
+def create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, items, total_amount, payment, balance_due, is_quote=False):
     try:
         c = canvas.Canvas(file_name, pagesize=letter)
         title = "QUOTE" if is_quote else "INVOICE"
@@ -87,7 +91,9 @@ def create_invoice(file_name, invoice_number, date, due_date, customer_name, cus
         c.setFont("Helvetica", 12)
         c.drawString(50, y_position - 35, customer_name)
         c.drawString(50, y_position - 50, customer_address)
-        c.drawString(50, y_position - 65, customer_phone)
+        c.drawString(50, y_position - 65, format_phone_number(customer_phone))
+        if customer_email:
+            c.drawString(50, y_position - 80, customer_email)
 
         # Partition Line
         y_position -= 90
@@ -143,7 +149,8 @@ with tab1:
     is_quote = doc_type == "Quote"
     customer_name = st.text_input("Customer Name")
     customer_address = st.text_area("Customer Address")
-    customer_phone = st.text_input("Customer Phone")
+    customer_phone = st.text_input("Customer Phone (format: 7894560213)")
+    customer_email = st.text_input("Customer Email (optional)")
     date = st.date_input("Date", datetime.date.today())
     due_date = st.text_input("Due Date", "On Receipt")
 
@@ -183,7 +190,7 @@ with tab1:
             if invoice_number:  # Ensure invoice number is valid
                 sanitized_name = customer_name.replace(" ", "_")
                 file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
-                create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, st.session_state["items"], total_amount, payment, balance_due, is_quote)
+                create_invoice(file_name, invoice_number, date, due_date, customer_name, customer_address, customer_phone, customer_email, st.session_state["items"], total_amount, payment, balance_due, is_quote)
                 st.success(f"{doc_type} generated!")
                 st.session_state["items"] = []
 
