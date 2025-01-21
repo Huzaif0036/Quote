@@ -233,15 +233,39 @@ with tab1:
 # Tab 2: Manage Documents
 with tab2:
     st.header("Manage Documents")
-    pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
-    for pdf_file in pdf_files:
-        col1, col2, col3 = st.columns([6, 2, 1])
-        with col1:
-            st.write(os.path.basename(pdf_file))
-        with col2:
-            with open(pdf_file, "rb") as f:
-                st.download_button("Download", data=f, file_name=os.path.basename(pdf_file), mime="application/pdf")
-        with col3:
-            if st.button("Delete", key=pdf_file):
-                os.remove(pdf_file)
-                st.warning(f"{os.path.basename(pdf_file)} deleted!")
+    
+    # Search Bar
+    search_term = st.text_input("Search by Document Name", "")
+    if search_term:
+        pdf_files = [f for f in glob.glob(f"{PDF_DIR}/*.pdf") if search_term.lower() in f.lower()]
+    else:
+        pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
+    
+    # Create Tabs for Invoice/Estimate Management
+    with st.expander("Manage Invoices"):
+        invoice_files = [f for f in pdf_files if "INV" in os.path.basename(f)]
+        for pdf_file in invoice_files:
+            col1, col2, col3 = st.columns([6, 2, 1])
+            with col1:
+                st.write(os.path.basename(pdf_file))
+            with col2:
+                with open(pdf_file, "rb") as f:
+                    st.download_button("Download", data=f, file_name=os.path.basename(pdf_file), mime="application/pdf")
+            with col3:
+                if st.button("Delete", key=pdf_file):
+                    os.remove(pdf_file)
+                    st.warning(f"{os.path.basename(pdf_file)} deleted!")
+
+    with st.expander("Manage Estimates"):
+        estimate_files = [f for f in pdf_files if "EST" in os.path.basename(f)]
+        for pdf_file in estimate_files:
+            col1, col2, col3 = st.columns([6, 2, 1])
+            with col1:
+                st.write(os.path.basename(pdf_file))
+            with col2:
+                with open(pdf_file, "rb") as f:
+                    st.download_button("Download", data=f, file_name=os.path.basename(pdf_file), mime="application/pdf")
+            with col3:
+                if st.button("Delete", key=pdf_file):
+                    os.remove(pdf_file)
+                    st.warning(f"{os.path.basename(pdf_file)} deleted!")
