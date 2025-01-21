@@ -6,7 +6,6 @@ from reportlab.lib import colors
 import datetime
 import glob
 import logging
-import math
 
 # Configuration settings
 PDF_DIR = "invoices"
@@ -72,10 +71,14 @@ def create_invoice(
         c.setFont("Helvetica-Bold", 20)
         c.drawString(200, y_position - 30, f"{title}")
         c.setFont("Helvetica", 12)
-        c.drawString(200, y_position - 50, f"{invoice_number}")
         c.drawString(400, y_position - 30, f"DATE: {format_date(date)}")
+
+        # Place Invoice/Estimate number below the date
+        c.setFont("Helvetica", 12)
+        c.drawString(400, y_position - 50, f"{invoice_number}")  # Move invoice number here
+
         if doc_type == "invoice":
-            c.drawString(400, y_position - 50, f"DUE: {due_date if due_date else 'On Receipt'}")
+            c.drawString(400, y_position - 70, f"DUE: {due_date if due_date else 'On Receipt'}")
 
         # Company Info
         c.setFont("Helvetica", 10)
@@ -134,16 +137,6 @@ def create_invoice(
         c.setFont("Helvetica", 10)
         c.setFillColor(colors.grey)
         c.drawString(50, 50, "Thank you for choosing Tranquil Heating and Cooling!")
-
-        # Place "Perfecting Your Climate" under the logo in one line
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y_position - 80, "Perfecting Your Climate")
-
-        # Draw a line under the logo and tagline
-        c.setLineWidth(1)
-        c.line(50, y_position - 85, 550, y_position - 85)  # The line spans the width of the logo and tagline area
-
-        # Create footer logo (bottom-right corner)
         if os.path.exists(LOGO_PATH):
             c.drawImage(LOGO_PATH, 450, 30, width=50, height=50)
 
