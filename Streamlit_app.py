@@ -135,20 +135,15 @@ def create_invoice(
         c.setFillColor(colors.grey)
         c.drawString(50, 50, "Thank you for choosing Tranquil Heating and Cooling!")
 
-        # Create semi-circle text "Perfecting Your Climate" at the bottom with a smaller font
-        c.setFont("Helvetica", 8)
-        center_x = 300  # Center of the semi-circle
-        radius = 80  # Radius of the semi-circle (smaller than before)
-        angle_step = 10  # The step between each character
+        # Place "Perfecting Your Climate" under the logo in one line
+        c.setFont("Helvetica", 10)
+        c.drawString(50, y_position - 80, "Perfecting Your Climate")
 
-        for i, char in enumerate("Perfecting Your Climate"):
-            angle = (i * angle_step) - (len("Perfecting Your Climate") * angle_step / 2)
-            radian = math.radians(angle)
-            x = center_x + radius * math.cos(radian)
-            y = 50 + radius * math.sin(radian)
-            c.drawString(x, y, char)
+        # Draw a line under the logo and tagline
+        c.setLineWidth(1)
+        c.line(50, y_position - 85, 550, y_position - 85)  # The line spans the width of the logo and tagline area
 
-        # Place the logo in the footer as well (bottom-right corner)
+        # Create footer logo (bottom-right corner)
         if os.path.exists(LOGO_PATH):
             c.drawImage(LOGO_PATH, 450, 30, width=50, height=50)
 
