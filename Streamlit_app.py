@@ -6,6 +6,7 @@ from reportlab.lib import colors
 import datetime
 import glob
 import logging
+import math
 
 # Configuration settings
 PDF_DIR = "invoices"
@@ -71,14 +72,10 @@ def create_invoice(
         c.setFont("Helvetica-Bold", 20)
         c.drawString(200, y_position - 30, f"{title}")
         c.setFont("Helvetica", 12)
+        c.drawString(200, y_position - 50, f"{invoice_number}")
         c.drawString(400, y_position - 30, f"DATE: {format_date(date)}")
-
-        # Place Invoice/Estimate number below the date
-        c.setFont("Helvetica", 12)
-        c.drawString(400, y_position - 50, f"{invoice_number}")  # Move invoice number here
-
         if doc_type == "invoice":
-            c.drawString(400, y_position - 70, f"DUE: {due_date if due_date else 'On Receipt'}")
+            c.drawString(400, y_position - 50, f"DUE: {due_date if due_date else 'On Receipt'}")
 
         # Company Info
         c.setFont("Helvetica", 10)
@@ -137,6 +134,22 @@ def create_invoice(
         c.setFont("Helvetica", 10)
         c.setFillColor(colors.grey)
         c.drawString(50, 50, "Thank you for choosing Tranquil Heating and Cooling!")
+
+        # Create semi-circle text "Perfecting Your Climate"
+        c.setFont("Helvetica-Bold", 12)
+        c.setFillColor(colors.black)
+        center_x = 300  # Center of the semi-circle
+        radius = 100  # Radius of the semi-circle
+        angle_step = 15  # The step between each character
+
+        for i, char in enumerate("Perfecting Your Climate"):
+            angle = (i * angle_step) - (len("Perfecting Your Climate") * angle_step / 2)
+            radian = math.radians(angle)
+            x = center_x + radius * math.cos(radian)
+            y = 50 + radius * math.sin(radian)
+            c.drawString(x, y, char)
+
+        # Place the logo in the footer as well (bottom-right corner)
         if os.path.exists(LOGO_PATH):
             c.drawImage(LOGO_PATH, 450, 30, width=50, height=50)
 
