@@ -72,11 +72,13 @@ def create_invoice(
         c.drawString(200, y_position - 30, f"{title}")
         c.setFont("Helvetica", 12)
         c.drawString(400, y_position - 30, f"DATE: {format_date(date)}")
-        if doc_type == "invoice":
-            c.drawString(400, y_position - 50, f"DUE: {due_date if due_date else 'On Receipt'}")
 
-        # Counter Below Date
-        c.drawString(400, y_position - 70, f"{invoice_number}")
+        # Place Invoice/Estimate number below the date
+        c.setFont("Helvetica", 12)
+        c.drawString(400, y_position - 50, f"{invoice_number}")  # Move invoice number here
+
+        if doc_type == "invoice":
+            c.drawString(400, y_position - 70, f"DUE: {due_date if due_date else 'On Receipt'}")
 
         # Company Info
         c.setFont("Helvetica", 10)
@@ -143,3 +145,106 @@ def create_invoice(
     except Exception as e:
         logger.error(f"Error generating {title} {invoice_number} for {customer_name}: {e}")
         st.error(f"Error generating {title}: {e}")
+
+# Streamlit App
+st.title("Invoice/Estimate Portal")
+tab1, tab2 = st.tabs(["Generate Document", "Manage Documents"])
+
+# Tab 1: Generate Document
+with tab1:
+    st.header("Generate New Invoice/Estimate")
+    doc_type = st.radio("Select Document Type", options=["Invoice", "Estimate"])
+    is_estimate = doc_type == "Estimate"
+    customer_name = st.text_input("Customer Name")
+    customer_address = st.text_area("Customer Address")
+    customer_phone = st.text_input("Customer Phone (format: 7894560213)")
+    customer_email = st.text_input("Customer Email (optional)")
+    date = st.date_input("Date", datetime.date.today())
+    due_date = st.text_input("Due Date (only for invoices)", "On Receipt") if not is_estimate else None
+
+    if not customer_name or not customer_address or not customer_phone:
+        st.warning("Please fill in all customer details.")
+
+    # Initialize items
+    if "items" not in st.session_state:
+        st.session_state["items"] = []
+
+    # Add items
+    st.subheader("Add Items")
+    description = st.text_input("Description")
+    rate = st.number_input("Rate", min_value=0.0, step=0.01)
+    quantity = st.number_input("Quantity", min_value=1, step=1)
+    if st.button("Add Item"):
+        if description and rate > 0 and quantity > 0:
+            st.session_state["items"].append(
+                {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
+            )
+            st.success("Item added!")
+        else:
+            st.error("Please provide valid item details.")
+
+    if st.session_state["items"]:
+        total_amount = sum(item["amount"] for item in st.session_state["items"])
+        payment = 0.0 if is_estimate else st.number_input("Payment Amount", min_value=0.0, max_value=total_amount, step=0.01, value=0.0)
+        balance_due = total_amount - payment
+
+        st.write(f"**Total Amount:** USD ${total_amount:.2f}")
+        if not is_estimate:
+            st.write(f"**Payment:** USD ${payment:.2f}")
+            st.write(f"**Balance Due:** USD ${balance_due:.2f}")
+
+        # Generate and save PDF
+        if st.button("Generate PDF"):
+            counter_file = ESTIMATE_COUNTER_FILE if is_estimate else COUNTER_FILE
+            prefix = "EST" if is_estimate else "INV"
+            invoice_number = get_next_number(counter_file, prefix)
+            if invoice_number:
+                sanitized_name = customer_name.replace(" ", "_")
+                file_name = f"{PDF_DIR}/{sanitized_name}_{doc_type}.pdf"
+                create_invoice(
+                    file_name,
+                    doc_type.lower(),
+                    invoice_number,
+                    date,
+                    customer_name,
+                    customer_address,
+                    customer_phone,
+                    customer_email,
+                    st.session_state["items"],
+                    total_amount,
+                    payment,
+                    balance_due,
+                    due_date,
+                )
+                st.success(f"{doc_type} generated!")
+                st.session_state["items"] = []
+
+                with open(file_name, "rb") as f:
+                    st.download_button(
+                        label="Download PDF",
+                        data=f,
+                        file_name=os.path.basename(file_name),
+                        mime="application/pdf",
+                    )
+
+# Tab 2: Manage Documents
+with tab2:
+    st.header("Manage Documents")
+    if "deleted_files" not in st.session_state:
+        st.session_state["deleted_files"] = []
+
+    pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
+    for pdf_file in pdf_files:
+        if os.path.basename(pdf_file) in st.session_state["deleted_files"]:
+            continue
+        col1, col2, col3 = st.columns([6, 1, 1])
+        with col1:
+            st.write(os.path.basename(pdf_file))
+        with col2:
+            with open(pdf_file, "rb") as f:
+                st.download_button("Download", data=f, file_name=os.path.basename(pdf_file), mime="application/pdf")
+        with col3:
+            if st.button("Delete", key=pdf_file):
+                st.session_state["deleted_files"].append(os.path.basename(pdf_file))
+                os.remove(pdf_file)
+                st.warning(f"{os.path.basename(pdf_file)} deleted!")
