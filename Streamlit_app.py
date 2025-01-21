@@ -135,12 +135,11 @@ def create_invoice(
         c.setFillColor(colors.grey)
         c.drawString(50, 50, "Thank you for choosing Tranquil Heating and Cooling!")
 
-        # Create semi-circle text "Perfecting Your Climate"
-        c.setFont("Helvetica-Bold", 12)
-        c.setFillColor(colors.black)
+        # Create semi-circle text "Perfecting Your Climate" at the bottom with a smaller font
+        c.setFont("Helvetica", 8)
         center_x = 300  # Center of the semi-circle
-        radius = 100  # Radius of the semi-circle
-        angle_step = 15  # The step between each character
+        radius = 80  # Radius of the semi-circle (smaller than before)
+        angle_step = 10  # The step between each character
 
         for i, char in enumerate("Perfecting Your Climate"):
             angle = (i * angle_step) - (len("Perfecting Your Climate") * angle_step / 2)
