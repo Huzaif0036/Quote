@@ -153,35 +153,38 @@ tab1, tab2 = st.tabs(["Generate Document", "Manage Documents"])
 # Tab 1: Generate Document
 with tab1:
     st.header("Generate New Invoice/Estimate")
-    doc_type = st.radio("Select Document Type", options=["Invoice", "Estimate"])
+    doc_type = st.radio("Select Document Type", options=["Invoice", "Estimate"], horizontal=True)
     is_estimate = doc_type == "Estimate"
-    customer_name = st.text_input("Customer Name")
-    customer_address = st.text_area("Customer Address")
-    customer_phone = st.text_input("Customer Phone (format: 7894560213)")
-    customer_email = st.text_input("Customer Email (optional)")
-    date = st.date_input("Date", datetime.date.today())
-    due_date = st.text_input("Due Date (only for invoices)", "On Receipt") if not is_estimate else None
+    
+    # Customer Info Section
+    with st.form(key='customer_info_form', clear_on_submit=True):
+        customer_name = st.text_input("Customer Name", max_chars=50)
+        customer_address = st.text_area("Customer Address", max_chars=250)
+        customer_phone = st.text_input("Customer Phone (format: 7894560213)", max_chars=13)
+        customer_email = st.text_input("Customer Email (optional)", max_chars=100)
+        date = st.date_input("Date", datetime.date.today())
+        due_date = st.text_input("Due Date (only for invoices)", "On Receipt") if not is_estimate else None
+        submit_button = st.form_submit_button("Add Customer")
 
-    if not customer_name or not customer_address or not customer_phone:
+    if submit_button and (not customer_name or not customer_address or not customer_phone):
         st.warning("Please fill in all customer details.")
-
+    
     # Initialize items
     if "items" not in st.session_state:
         st.session_state["items"] = []
+    
+    # Add items section with a more intuitive layout
+    with st.form(key='items_form', clear_on_submit=True):
+        description = st.text_input("Item Description", max_chars=100)
+        rate = st.number_input("Rate", min_value=0.0, step=0.01)
+        quantity = st.number_input("Quantity", min_value=1, step=1)
+        add_item_button = st.form_submit_button("Add Item")
 
-    # Add items
-    st.subheader("Add Items")
-    description = st.text_input("Description")
-    rate = st.number_input("Rate", min_value=0.0, step=0.01)
-    quantity = st.number_input("Quantity", min_value=1, step=1)
-    if st.button("Add Item"):
-        if description and rate > 0 and quantity > 0:
-            st.session_state["items"].append(
-                {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
-            )
-            st.success("Item added!")
-        else:
-            st.error("Please provide valid item details.")
+    if add_item_button and description and rate > 0 and quantity > 0:
+        st.session_state["items"].append(
+            {"description": description, "rate": rate, "quantity": quantity, "amount": rate * quantity}
+        )
+        st.success("Item added!")
 
     if st.session_state["items"]:
         total_amount = sum(item["amount"] for item in st.session_state["items"])
@@ -230,14 +233,9 @@ with tab1:
 # Tab 2: Manage Documents
 with tab2:
     st.header("Manage Documents")
-    if "deleted_files" not in st.session_state:
-        st.session_state["deleted_files"] = []
-
     pdf_files = glob.glob(f"{PDF_DIR}/*.pdf")
     for pdf_file in pdf_files:
-        if os.path.basename(pdf_file) in st.session_state["deleted_files"]:
-            continue
-        col1, col2, col3 = st.columns([6, 1, 1])
+        col1, col2, col3 = st.columns([6, 2, 1])
         with col1:
             st.write(os.path.basename(pdf_file))
         with col2:
@@ -245,6 +243,5 @@ with tab2:
                 st.download_button("Download", data=f, file_name=os.path.basename(pdf_file), mime="application/pdf")
         with col3:
             if st.button("Delete", key=pdf_file):
-                st.session_state["deleted_files"].append(os.path.basename(pdf_file))
                 os.remove(pdf_file)
                 st.warning(f"{os.path.basename(pdf_file)} deleted!")
